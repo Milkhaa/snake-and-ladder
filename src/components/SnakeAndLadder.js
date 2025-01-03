@@ -26,12 +26,15 @@ const SnakeAndLadder = () => {
     80: 100  // Ladder
   };
 
-  const CELL_SIZE = 48; // w-12 = 48px
+  const CELL_SIZE = 48;
   const BOARD_SIZE = 10;
 
-  const getCellPosition = useCallback((number) => {
-    const row = Math.floor((100 - number) / 10);
-    const col = row % 2 === 0 ? 9 - ((100 - number) % 10) : (100 - number) % 10;
+  const getCellCenter = useCallback((number) => {
+    const row = 9 - Math.floor((number - 1) / 10);
+    const col = row % 2 === 0 
+      ? (number - 1) % 10 
+      : 9 - ((number - 1) % 10);
+    
     return {
       x: col * CELL_SIZE + CELL_SIZE / 2,
       y: row * CELL_SIZE + CELL_SIZE / 2
@@ -53,30 +56,28 @@ const SnakeAndLadder = () => {
     ];
 
     snakes.forEach(({ start, end }) => {
-      const startPos = getCellPosition(start);
-      const endPos = getCellPosition(end);
+      const startPos = getCellCenter(start);
+      const endPos = getCellCenter(end);
       
-      // Create snake path
-      const midX = (startPos.x + endPos.x) / 2;
-      const midY = (startPos.y + endPos.y) / 2;
-      const controlX = midX + 20;
-      const controlY = midY;
+      // Create snake path with curves
+      const dx = endPos.x - startPos.x;
+      const dy = endPos.y - startPos.y;
+      const cp1x = startPos.x + dx * 0.25;
+      const cp1y = startPos.y + dy * 0.5;
+      const cp2x = startPos.x + dx * 0.75;
+      const cp2y = startPos.y + dy * 0.5;
 
       elements.push(
         <g key={`snake-${start}`}>
           <path
-            d={`M ${startPos.x} ${startPos.y} Q ${controlX} ${controlY} ${endPos.x} ${endPos.y}`}
+            d={`M ${startPos.x} ${startPos.y} 
+               C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${endPos.x} ${endPos.y}`}
             stroke="red"
             strokeWidth="3"
             fill="none"
           />
-          {/* Snake head */}
-          <circle
-            cx={startPos.x}
-            cy={startPos.y}
-            r="4"
-            fill="red"
-          />
+          <circle cx={startPos.x} cy={startPos.y} r="4" fill="darkred" />
+          <circle cx={endPos.x} cy={endPos.y} r="3" fill="red" />
         </g>
       );
     });
@@ -94,18 +95,23 @@ const SnakeAndLadder = () => {
     ];
 
     ladders.forEach(({ start, end }) => {
-      const startPos = getCellPosition(start);
-      const endPos = getCellPosition(end);
+      const startPos = getCellCenter(start);
+      const endPos = getCellCenter(end);
       const angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x);
-      const spacing = 5;
+      const spacing = 4;
       
-      // Create ladder sides
+      // Ladder sides offset
       const x1Offset = Math.sin(angle) * spacing;
       const y1Offset = -Math.cos(angle) * spacing;
       
+      // Calculate number of rungs based on ladder length
+      const length = Math.sqrt(
+        Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2)
+      );
+      const rungs = Math.floor(length / 20);
+
       elements.push(
         <g key={`ladder-${start}`}>
-          {/* Ladder sides */}
           <line
             x1={startPos.x + x1Offset}
             y1={startPos.y + y1Offset}
@@ -122,9 +128,8 @@ const SnakeAndLadder = () => {
             stroke="green"
             strokeWidth="2"
           />
-          {/* Ladder rungs */}
-          {[...Array(5)].map((_, i) => {
-            const t = (i + 1) / 6;
+          {[...Array(rungs)].map((_, i) => {
+            const t = (i + 1) / (rungs + 1);
             const x = startPos.x + (endPos.x - startPos.x) * t;
             const y = startPos.y + (endPos.y - startPos.y) * t;
             return (
@@ -144,7 +149,7 @@ const SnakeAndLadder = () => {
     });
 
     return elements;
-  }, [getCellPosition]);
+  }, [getCellCenter]);
 
   const rollDice = () => {
     if (rolling || gameOver) return;
