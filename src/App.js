@@ -1,10 +1,10 @@
 import React from 'react';
-import SnakeAndLadder from './components/SnakeAndLadder';
+import Game from './components/Game';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SnakeAndLadder />
+    <div className="min-h-screen bg-gray-100 py-8">
+      <Game />
     </div>
   );
 }
